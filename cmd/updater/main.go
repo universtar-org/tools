@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/universtar-org/universtar-updater/internal/api"
-	"github.com/universtar-org/universtar-updater/internal/updater"
+	"github.com/universtar-org/updater/internal/api"
+	"github.com/universtar-org/updater/internal/updater"
 )
 
 func main() {

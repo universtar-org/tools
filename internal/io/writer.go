@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/goccy/go-yaml"
-	"github.com/universtar-org/universtar-updater/internal/model"
+	"github.com/universtar-org/updater/internal/model"
 )
 
 func WriteYaml(projects []model.Project, path string) error {
