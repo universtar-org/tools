@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/universtar-org/updater/internal/api"
+	"github.com/universtar-org/updater/internal/io"
 	"github.com/universtar-org/updater/internal/updater"
 )
 
@@ -17,7 +17,7 @@ func main() {
 	client := api.NewClient("")
 	ctx := context.Background()
 
-	list, err := getDataFiles(os.Args[1])
+	list, err := io.GetDataFiles(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
@@ -30,20 +30,4 @@ func main() {
 	}
 
 	fmt.Println("Finished!")
-}
-
-func getDataFiles(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	var paths []string
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			paths = append(paths, filepath.Join(dir, entry.Name()))
-		}
-	}
-
-	return paths, nil
 }
