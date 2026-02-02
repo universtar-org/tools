@@ -2,6 +2,8 @@ package updater
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -21,9 +23,15 @@ func Update(client *api.Client, ctx context.Context, path string) error {
 	}
 
 	for i := range projects {
-		repo, err := client.GetRepo(ctx, owner, projects[i].Repo)
+		fmt.Printf("Processing: %v/%v\n", owner, projects[i].Repo)
+
+		repo, status, err := client.GetRepo(ctx, owner, projects[i].Repo)
 		if err != nil {
 			return err
+		}
+
+		if status != http.StatusOK {
+			return fmt.Errorf("Request Failed: Get %v", status)
 		}
 
 		tag_list := append([]string{repo.Language}, repo.Tags...)
