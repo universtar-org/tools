@@ -1,4 +1,4 @@
-module github.com/universtar-org/updater
+module github.com/universtar-org/tools
 
 go 1.25.5
 

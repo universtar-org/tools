@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/universtar-org/updater/internal/api"
-	"github.com/universtar-org/updater/internal/io"
+	"github.com/universtar-org/tools/internal/api"
+	"github.com/universtar-org/tools/internal/io"
 )
 
 // Update a file/user.

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/universtar-org/updater/internal/api"
-	"github.com/universtar-org/updater/internal/io"
-	"github.com/universtar-org/updater/internal/updater"
+	"github.com/universtar-org/tools/internal/api"
+	"github.com/universtar-org/tools/internal/io"
+	"github.com/universtar-org/tools/internal/updater"
 )
 
 func main() {
