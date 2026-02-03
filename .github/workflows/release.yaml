@@ -23,9 +23,9 @@ jobs:
         run: |
           mkdir dist
 
-          GOOS=linux GOARCH=amd64 go build -o dist/checker-linux-amd64 ./cmd/checker
-          GOOS=linux GOARCH=amd64 go build -o dist/unique-linux-amd64 ./cmd/unique
-          GOOS=linux GOARCH=amd64 go build -o dist/updater-linux-amd64 ./cmd/updater
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/checker-linux-amd64 ./cmd/checker
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/unique-linux-amd64 ./cmd/unique
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/updater-linux-amd64 ./cmd/updater
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
