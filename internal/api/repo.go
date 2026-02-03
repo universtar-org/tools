@@ -38,3 +38,26 @@ func (c *Client) GetRepoByUser(ctx context.Context, username string) ([]model.Re
 
 	return repos, status, nil
 }
+
+func (c *Client) GetDirContent(ctx context.Context, username, repo, path string) ([]string, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, fmt.Sprintf("/repos/%s/%s/contents/%s", username, repo, path))
+	if err != nil {
+		return nil, err
+	}
+
+	var contents []map[string]any
+	var result []string
+	status, err := c.do(req, &contents)
+	if err != nil {
+		return nil, err
+	}
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("Get: %v", status)
+	}
+
+	for _, v := range contents {
+		result = append(result, v["name"].(string))
+	}
+
+	return result, nil
+}
