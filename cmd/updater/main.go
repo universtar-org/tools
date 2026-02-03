@@ -3,33 +3,57 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/universtar-org/tools/internal/api"
 	"github.com/universtar-org/tools/internal/io"
+	"github.com/universtar-org/tools/internal/log"
 	"github.com/universtar-org/tools/internal/utils"
 )
 
 func main() {
+	log.InitLogger(true)
+
 	if len(os.Args) != 2 {
-		panic(fmt.Errorf("Usage: updater ${data-file-dir}"))
+		slog.Error(
+			"invalid arguments",
+			"usage", "updater ${data-file-dir}",
+		)
+		os.Exit(2)
 	}
+
 	client, ctx := utils.InitClientAndContext("")
 
-	list, err := io.GetDataFiles(os.Args[1])
+	dir := os.Args[1]
+	list, err := io.GetDataFiles(dir)
 	if err != nil {
-		panic(err)
+		slog.Error(
+			"failed to get data files",
+			"dir", dir,
+			"err", err,
+		)
+		os.Exit(1)
 	}
 
 	for _, path := range list {
-		fmt.Println("Processing: ", path)
+		slog.Info(
+			"processing",
+			"path", path,
+		)
+
 		if err := update(client, ctx, path); err != nil {
-			panic(err)
+			slog.Error(
+				"update file failed",
+				"path", path,
+				"err", err,
+			)
+			os.Exit(1)
 		}
 	}
 
-	fmt.Println("Finished!")
+	slog.Info("finished")
 }
 
 // Update a file/user.
@@ -39,23 +63,32 @@ func update(client *api.Client, ctx context.Context, path string) error {
 
 	projects, err := io.ReadYaml(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("read yaml %s: %w", path, err)
 	}
 
 	for i := range projects {
-		fmt.Printf("Processing: %v/%v\n", owner, projects[i].Repo)
+		slog.Info(
+			"processing",
+			"repo", owner+"/"+projects[i].Repo,
+		)
 
 		repo, status, err := client.GetRepo(ctx, owner, projects[i].Repo)
 		if err != nil {
-			return err
+			return fmt.Errorf("get repo %s/%s: %w", owner, projects[i].Repo, err)
 		}
 
 		if status != http.StatusOK {
-			return fmt.Errorf("Request Failed: Get %v", status)
+			return fmt.Errorf("get repo %s/%s failed: unexpected status %d", owner, projects[i].Repo, status)
 		}
 
 		tags := append([]string{repo.Language}, repo.Tags...)
+		slog.Debug(
+			"get tags",
+			"size", len(tags),
+		)
+
 		if len(tags) > maxTagNumber {
+			slog.Debug("remove some tags")
 			tags = tags[:maxTagNumber]
 		}
 		projects[i].Description = repo.Description
@@ -64,7 +97,9 @@ func update(client *api.Client, ctx context.Context, path string) error {
 		projects[i].Tags = tags
 	}
 
-	io.WriteYaml(projects, path)
+	if err := io.WriteYaml(projects, path); err != nil {
+		return fmt.Errorf("write yaml to %s: %w", path, err)
+	}
 
 	return nil
 }

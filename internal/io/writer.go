@@ -1,6 +1,8 @@
 package io
 
 import (
+	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/goccy/go-yaml"
@@ -8,10 +10,15 @@ import (
 )
 
 func WriteYaml(projects []model.Project, path string) error {
+	slog.Debug("write yaml start", "path", path, "count", len(projects))
+
 	data, err := yaml.Marshal(projects)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal yaml %s: %w", path, err)
 	}
 
-	return os.WriteFile(path, data, 0644)
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return fmt.Errorf("write yaml %s: %w", path, err)
+	}
+	return nil
 }

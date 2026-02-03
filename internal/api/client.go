@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -27,6 +28,8 @@ func NewClient(token string) *Client {
 
 // newRequest Create a new request before sending.
 func (c *Client) newRequest(ctx context.Context, method, path string) (*http.Request, error) {
+	slog.Debug("build request", "method", method, "path", path)
+
 	req, err := http.NewRequestWithContext(
 		ctx,
 		method,
@@ -35,7 +38,7 @@ func (c *Client) newRequest(ctx context.Context, method, path string) (*http.Req
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create request %s %s: %w", method, path, err)
 	}
 
 	req.Header.Set("Accept", "application/vnd.github+json")
@@ -48,18 +51,24 @@ func (c *Client) newRequest(ctx context.Context, method, path string) (*http.Req
 
 // do Send the request and decode the response in `json` format.
 func (c *Client) do(req *http.Request, v any) (int, error) {
+	slog.Debug("send request", "method", req.Method, "url", req.URL.String())
+
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return http.StatusBadRequest, err
+		return http.StatusBadRequest, fmt.Errorf("send request %s %s: %w", req.Method, req.URL.String(), err)
 	}
 	defer resp.Body.Close()
+
+	slog.Debug("receive response", "method", req.Method, "url", req.URL.String(), "status", resp.StatusCode)
 
 	if resp.StatusCode >= 400 {
 		return resp.StatusCode, fmt.Errorf("github api error: %s", resp.Status)
 	}
 
 	if v != nil {
-		return resp.StatusCode, json.NewDecoder(resp.Body).Decode(v)
+		if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
+			return resp.StatusCode, fmt.Errorf("decode response: %w", err)
+		}
 	}
 
 	return resp.StatusCode, nil

@@ -3,19 +3,26 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/universtar-org/tools/internal/api"
+	"github.com/universtar-org/tools/internal/log"
 	"github.com/universtar-org/tools/internal/model"
 	"github.com/universtar-org/tools/internal/utils"
 )
 
 func main() {
+	log.InitLogger(true)
+
 	if len(os.Args) != 2 {
-		panic(fmt.Errorf("Usage: unique ${username}"))
+		slog.Error(
+			"invalid arguments",
+			"usage", "unique ${username}",
+		)
+		os.Exit(2)
 	}
 
 	client, ctx := utils.InitClientAndContext("")
@@ -23,42 +30,73 @@ func main() {
 
 	user, err := client.GetUser(ctx, username)
 	if err != nil {
-		panic(err)
+		slog.Error(
+			"get user failed",
+			"user", username,
+			"err", err,
+		)
+		os.Exit(1)
 	}
 
 	if username != user.Name {
-		panic(fmt.Errorf("Got: %s\nExpect: %s\n", username, user.Name))
+		slog.Error(
+			"username mismatch",
+			"get", username,
+			"expect", user.Name,
+		)
+		os.Exit(1)
 	}
 
-	repos, status, err := client.GetRepoByUser(ctx, username)
+	repos, err := client.GetRepoByUser(ctx, username)
 	if err != nil {
-		panic(err)
-	}
-	if status != http.StatusOK {
-		panic(fmt.Errorf("Get %v", status))
+		slog.Error(
+			"get repo by user failed",
+			"user", username,
+			"err", err,
+		)
+		os.Exit(1)
 	}
 
-	checkUniqueness(client, ctx, repos, *user)
+	if err := checkUniqueness(client, ctx, repos, *user); err != nil {
+		slog.Error(
+			"check uniqueness",
+			"user", username,
+			"err", err,
+		)
+		os.Exit(1)
+	}
+
+	slog.Info("finished")
 }
 
-func checkUniqueness(client *api.Client, ctx context.Context, repos []model.Repo, user model.User) {
+func checkUniqueness(client *api.Client, ctx context.Context, repos []model.Repo, user model.User) error {
 	if user.Type != "User" {
-		return
+		return nil
 	}
 
+	owner := "universtar-org"
+	path := "data/projects"
 	for _, repo := range repos {
 		if repo.Name == "tools" {
 			continue
 		}
-		contents, err := client.GetDirContent(ctx, "universtar-org", repo.Name, "data/projects")
+
+		slog.Info(
+			"checking",
+			"repo", owner+"/"+repo.Name,
+		)
+		contents, err := client.GetDirContent(ctx, owner, repo.Name, path)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("get dir content %s/%s/%s: %w", owner, repo.Name, path, err)
 		}
 
 		for _, content := range contents {
 			if user.Name == strings.TrimSuffix(content, filepath.Ext(content)) {
-				panic(fmt.Errorf("Duplicated Username in universtar-org/%s", repo.Name))
+
+				return fmt.Errorf("duplicated username in %s/%s", owner, repo.Name)
 			}
 		}
 	}
+
+	return nil
 }

@@ -3,53 +3,78 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/universtar-org/tools/internal/api"
 	"github.com/universtar-org/tools/internal/io"
+	"github.com/universtar-org/tools/internal/log"
 	"github.com/universtar-org/tools/internal/utils"
 )
 
 func main() {
+	log.InitLogger(true)
+
 	if len(os.Args) != 2 {
-		panic(fmt.Errorf("Usage: checker ${data-file-dir}"))
+		slog.Error(
+			"invalid arguments",
+			"usage", "checker <data-file-dir>",
+		)
+		os.Exit(2)
 	}
 
 	client, ctx := utils.InitClientAndContext("")
 
-	list, err := io.GetDataFiles(os.Args[1])
+	dir := os.Args[1]
+	list, err := io.GetDataFiles(dir)
 	if err != nil {
-		panic(err)
+		slog.Error(
+			"failed to get data files",
+			"dir", dir,
+			"err", err,
+		)
+		os.Exit(1)
 	}
 
 	for _, path := range list {
-		fmt.Println("Checking: ", path)
-		check(client, ctx, path)
-	}
-
-	fmt.Println("Finished!")
-}
-
-func check(client *api.Client, ctx context.Context, path string) {
-	projects, err := io.ReadYaml(path)
-	owner := utils.ParseOwner(path)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, project := range projects {
-		fmt.Printf("Checking: %v/%v\n", owner, project.Repo)
-
-		_, status, err := client.GetRepo(ctx, owner, project.Repo)
-		if err != nil || status != http.StatusOK {
-			var message string
-			if err != nil {
-				message = err.Error()
-			} else {
-				message = fmt.Sprintf("Get %v", status)
-			}
-			panic(fmt.Errorf("%v/%v: %v", owner, project.Repo, message))
+		slog.Info(
+			"checking file",
+			"path", path,
+		)
+		if err := check(client, ctx, path); err != nil {
+			slog.Error(
+				"check failed",
+				"path", path,
+				"err", err,
+			)
+			os.Exit(1)
 		}
 	}
+
+	slog.Info("finished")
+}
+
+func check(client *api.Client, ctx context.Context, path string) error {
+	projects, err := io.ReadYaml(path)
+	if err != nil {
+		return fmt.Errorf("read yaml %s: %w", path, err)
+	}
+
+	owner := utils.ParseOwner(path)
+
+	for _, project := range projects {
+		slog.Debug("checking repo", "owner", owner, "repo", project.Repo)
+
+		_, status, err := client.GetRepo(ctx, owner, project.Repo)
+		if err != nil {
+			return fmt.Errorf("checking repo %s/%s: %w", owner, project.Repo, err)
+		}
+
+		if status != http.StatusOK {
+			return fmt.Errorf("check repo %s/%s: unexpected status %d", owner, project.Repo, status)
+		}
+	}
+
+	return nil
 }
