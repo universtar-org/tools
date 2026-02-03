@@ -15,8 +15,7 @@ func main() {
 	if len(os.Args) != 2 {
 		panic(fmt.Errorf("Usage: updater ${data-file-dir}"))
 	}
-	client := api.NewClient("")
-	ctx := context.Background()
+	client, ctx := utils.InitClientAndContext("")
 
 	list, err := io.GetDataFiles(os.Args[1])
 	if err != nil {

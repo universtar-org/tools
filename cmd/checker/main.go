@@ -16,8 +16,7 @@ func main() {
 		panic(fmt.Errorf("Usage: checker ${data-file-dir}"))
 	}
 
-	client := api.NewClient("")
-	ctx := context.Background()
+	client, ctx := utils.InitClientAndContext("")
 
 	list, err := io.GetDataFiles(os.Args[1])
 	if err != nil {
