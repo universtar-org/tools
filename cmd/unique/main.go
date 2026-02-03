@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/universtar-org/tools/internal/api"
@@ -70,6 +71,8 @@ func main() {
 }
 
 func checkUniqueness(client *api.Client, ctx context.Context, repos []model.Repo, user model.User) error {
+	projectWhiteList := []string{"tools"}
+
 	if user.Type != "User" {
 		return nil
 	}
@@ -77,7 +80,7 @@ func checkUniqueness(client *api.Client, ctx context.Context, repos []model.Repo
 	owner := "universtar-org"
 	path := "data/projects"
 	for _, repo := range repos {
-		if repo.Name == "tools" {
+		if slices.Contains(projectWhiteList, repo.Name) {
 			continue
 		}
 
