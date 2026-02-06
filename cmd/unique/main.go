@@ -74,7 +74,7 @@ func main() {
 }
 
 func checkUniqueness(client *api.Client, ctx context.Context, repos []model.Repo, user model.User) error {
-	projectWhiteList := []string{"tools"}
+	projectWhiteList := []string{"tools", "www"}
 
 	if user.Type != "User" {
 		return nil
