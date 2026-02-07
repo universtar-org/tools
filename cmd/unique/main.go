@@ -40,7 +40,8 @@ func main() {
 		)
 	}
 
-	repos, err := client.GetRepoByUser(ctx, username)
+	const repoOwner = "universtar-org"
+	repos, err := client.GetRepoByUser(ctx, repoOwner)
 	if err != nil {
 		slog.Error(
 			"get repo by user failed",
@@ -50,7 +51,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := checkUniqueness(client, ctx, repos, *user); err != nil {
+	if err := checkUniqueness(client, ctx, repos, *user, repoOwner); err != nil {
 		slog.Error(
 			"check uniqueness",
 			"user", username,
@@ -73,14 +74,13 @@ func checkUsername(client *api.Client, ctx context.Context, username string) (*m
 	return user, nil
 }
 
-func checkUniqueness(client *api.Client, ctx context.Context, repos []model.Repo, user model.User) error {
+func checkUniqueness(client *api.Client, ctx context.Context, repos []model.Repo, user model.User, repoOwner string) error {
 	projectWhiteList := []string{"tools", "www"}
 
 	if user.Type != "User" {
 		return nil
 	}
 
-	owner := "universtar-org"
 	path := "data/projects"
 	for _, repo := range repos {
 		if slices.Contains(projectWhiteList, repo.Name) {
@@ -89,17 +89,17 @@ func checkUniqueness(client *api.Client, ctx context.Context, repos []model.Repo
 
 		slog.Info(
 			"checking",
-			"repo", owner+"/"+repo.Name,
+			"repo", repoOwner+"/"+repo.Name,
 		)
-		contents, err := client.GetDirContent(ctx, owner, repo.Name, path)
+		contents, err := client.GetDirContent(ctx, repoOwner, repo.Name, path)
 		if err != nil {
-			return fmt.Errorf("get dir content %s/%s/%s: %w", owner, repo.Name, path, err)
+			return fmt.Errorf("get dir content %s/%s/%s: %w", repoOwner, repo.Name, path, err)
 		}
 
 		for _, content := range contents {
 			if user.Name == strings.TrimSuffix(content, filepath.Ext(content)) {
 
-				return fmt.Errorf("duplicated username in %s/%s", owner, repo.Name)
+				return fmt.Errorf("duplicated username in %s/%s", repoOwner, repo.Name)
 			}
 		}
 	}
