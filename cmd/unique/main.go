@@ -32,23 +32,12 @@ func main() {
 	client, ctx := utils.InitClientAndContext("")
 	username := args[0]
 
-	user, err := client.GetUser(ctx, username)
+	user, err := checkUsername(client, ctx, username)
 	if err != nil {
 		slog.Error(
-			"get user failed",
-			"user", username,
+			"check username failed",
 			"err", err,
 		)
-		os.Exit(1)
-	}
-
-	if username != user.Name {
-		slog.Error(
-			"username mismatch",
-			"get", username,
-			"expect", user.Name,
-		)
-		os.Exit(1)
 	}
 
 	repos, err := client.GetRepoByUser(ctx, username)
@@ -71,6 +60,17 @@ func main() {
 	}
 
 	slog.Info("finished")
+}
+
+func checkUsername(client *api.Client, ctx context.Context, username string) (*model.User, error) {
+	user, err := client.GetUser(ctx, username)
+	if err != nil {
+		return nil, fmt.Errorf("get user %s: %w", username, err)
+	}
+	if username != user.Name {
+		return nil, fmt.Errorf("username mismatch: get %s, expect: %s", username, user.Name)
+	}
+	return user, nil
 }
 
 func checkUniqueness(client *api.Client, ctx context.Context, repos []model.Repo, user model.User) error {
