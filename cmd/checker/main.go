@@ -27,7 +27,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	client, ctx := utils.InitClientAndContext("")
+	client, ctx := utils.InitClientAndContext(opts.Token)
 
 	dir := args[0]
 	list, err := io.GetDataFiles(dir)
@@ -67,7 +67,10 @@ func check(client *api.Client, ctx context.Context, path string) error {
 	owner := utils.ParseOwner(path)
 
 	for _, project := range projects {
-		slog.Debug("checking repo", "owner", owner, "repo", project.Repo)
+		slog.Debug("checking repo",
+			"owner", owner,
+			"repo", project.Repo,
+		)
 
 		_, status, err := client.GetRepo(ctx, owner, project.Repo)
 		if err != nil {

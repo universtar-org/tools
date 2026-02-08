@@ -29,7 +29,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	client, ctx := utils.InitClientAndContext("")
+	client, ctx := utils.InitClientAndContext(opts.Token)
 	username := args[0]
 
 	user, err := checkUsername(client, ctx, username)

@@ -27,7 +27,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	client, ctx := utils.InitClientAndContext("")
+	client, ctx := utils.InitClientAndContext(opts.Token)
 
 	dir := args[0]
 	list, err := io.GetDataFiles(dir)
