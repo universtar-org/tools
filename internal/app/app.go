@@ -41,6 +41,7 @@ func (a *App) RootCmd() *cobra.Command {
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug log")
 	rootCmd.PersistentFlags().StringVarP(&token, "token", "t", "", "GitHub token")
 	rootCmd.AddCommand(a.UniqueCmd())
+	rootCmd.AddCommand(a.CheckCmd())
 
 	return rootCmd
 }

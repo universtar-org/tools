@@ -1,35 +1,38 @@
-package main
+package app
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/universtar-org/tools/internal/api"
 	"github.com/universtar-org/tools/internal/io"
-	"github.com/universtar-org/tools/internal/log"
 	"github.com/universtar-org/tools/internal/utils"
 )
 
-func main() {
-	opts := utils.ParseFlags()
-	log.InitLogger(opts.Debug)
-
-	args := flag.Args()
-	if len(args) != 1 {
-		slog.Error(
-			"invalid arguments",
-			"usage", "checker <data-file-dir>",
-		)
-		os.Exit(2)
+func (a *App) CheckCmd() *cobra.Command {
+	const usage = "check /path/to/data/files"
+	check := &cobra.Command{
+		Use:   usage,
+		Short: "Check repo files",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				slog.Error(
+					"invalid argument",
+					"usage", usage,
+				)
+				return fmt.Errorf("invalid argument")
+			}
+			return check(a.Client, a.Ctx, args[0])
+		},
 	}
 
-	client, ctx := utils.InitClientAndContext(opts.Token)
+	return check
+}
 
-	dir := args[0]
+func check(client *api.Client, ctx context.Context, dir string) error {
 	list, err := io.GetDataFiles(dir)
 	if err != nil {
 		slog.Error(
@@ -37,7 +40,7 @@ func main() {
 			"dir", dir,
 			"err", err,
 		)
-		os.Exit(1)
+		return fmt.Errorf("failed to read dir %s: %w", dir, err)
 	}
 
 	for _, path := range list {
@@ -45,20 +48,21 @@ func main() {
 			"checking file",
 			"path", path,
 		)
-		if err := check(client, ctx, path); err != nil {
+		if err := checkSingleFile(client, ctx, path); err != nil {
 			slog.Error(
 				"check failed",
 				"path", path,
 				"err", err,
 			)
-			os.Exit(1)
+			return fmt.Errorf("check file %s failed: %w", path, err)
 		}
 	}
 
 	slog.Info("finished")
+	return nil
 }
 
-func check(client *api.Client, ctx context.Context, path string) error {
+func checkSingleFile(client *api.Client, ctx context.Context, path string) error {
 	projects, err := io.ReadYaml(path)
 	if err != nil {
 		return fmt.Errorf("read yaml %s: %w", path, err)
